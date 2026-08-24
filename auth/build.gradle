@@ -10,5 +10,6 @@ dependencies {
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
     implementation 'commons-codec:commons-codec:1.13'
     implementation 'de.taimos:totp:1.0'
+    implementation 'org.mindrot:jbcrypt:0.4'
     api 'com.zerodhatech.kiteconnect:kiteconnect:3.5.0'
 }
