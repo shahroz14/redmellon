@@ -1,0 +1,8 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api "org.scala-lang:scala-library:${scalaFullVersion}"
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+}

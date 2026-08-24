@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: live-ingest
+  profiles:
+    active: creds
+
+ingest:
+  storage:
+    base-dir: ~/redmellon
+
+logging:
+  level:
+    com.redmellon: DEBUG

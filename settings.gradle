@@ -1,0 +1,7 @@
+rootProject.name = 'redmellon'
+
+include 'common'
+include 'auth'
+include 'broker-api'
+include 'storage'
+include 'live-ingest'

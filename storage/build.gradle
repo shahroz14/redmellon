@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':broker-api')
+    api 'com.fasterxml.jackson.core:jackson-databind'
+    api "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
+
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+
+    testImplementation "org.scalatest:scalatest_${scalaVersion}:3.2.17"
+    testRuntimeOnly "org.scalatestplus:junit-5-10_${scalaVersion}:3.2.17.0"
+}

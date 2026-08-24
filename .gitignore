@@ -1,0 +1,22 @@
+.gradle/
+build/
+out/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+.idea/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# env files
+.env
+*.env
+
+# credentials (never commit — copy application-creds.example.yml and fill in)
+**/application-creds.yml
+
+# storage data
+/var/redmellon/
