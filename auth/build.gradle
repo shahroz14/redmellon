@@ -12,4 +12,5 @@ dependencies {
     implementation 'de.taimos:totp:1.0'
     implementation 'org.mindrot:jbcrypt:0.4'
     api 'com.zerodhatech.kiteconnect:kiteconnect:3.5.0'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 }

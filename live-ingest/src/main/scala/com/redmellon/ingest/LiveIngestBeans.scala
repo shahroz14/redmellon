@@ -1,6 +1,12 @@
 package com.redmellon.ingest
 
-import com.redmellon.auth.{SessionManager, SessionManagerFactory, SessionRegistry, ZerodhaSessionManager}
+import com.redmellon.auth.{
+  AngelOneSessionManager,
+  SessionManager,
+  SessionManagerFactory,
+  SessionRegistry,
+  ZerodhaSessionManager
+}
 import com.redmellon.common.util.Logging
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.{Bean, Configuration}
@@ -18,8 +24,12 @@ class LiveIngestBeans extends Logging {
     new ZerodhaSessionManager(sessionRegistry)
 
   @Bean
-  def sessionManagerFactory(managers: List[SessionManager]): SessionManagerFactory =
-    new SessionManagerFactory(managers)
+  def angelOneSessionManager(sessionRegistry: SessionRegistry): AngelOneSessionManager =
+    new AngelOneSessionManager(sessionRegistry)
+
+  @Bean
+  def sessionManagerFactory(managers: java.util.List[SessionManager]): SessionManagerFactory =
+    new SessionManagerFactory(managers.asScala.toList)
 
   @Bean
   def autoLoginRunner(props: IngestProperties, factory: SessionManagerFactory): ApplicationRunner =

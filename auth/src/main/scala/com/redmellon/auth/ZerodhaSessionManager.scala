@@ -16,7 +16,9 @@ class ZerodhaSessionManager(sessionRegistry: SessionRegistry) extends SessionMan
     val kite =
       kiteConnectMap.computeIfAbsent(sessionKey(credentials.userId, app.apiKey), _ => new KiteConnect(app.apiKey))
     val user = kite.generateSession(requestToken, app.apiSecret)
-    info(s"session generated for user ${user.userId} and app ${app.apiKey} on $brokerName")
+    info(
+      s"session generated for user ${user.userId} (${user.userName}, ${user.email}) and app ${app.apiKey} on $brokerName"
+    )
     kite.setAccessToken(user.accessToken)
     kite.setPublicToken(user.publicToken)
     val session = ApiSession(
