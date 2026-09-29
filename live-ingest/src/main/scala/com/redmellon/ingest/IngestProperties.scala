@@ -11,5 +11,6 @@ import scala.beans.{BeanProperty, BooleanBeanProperty}
 @ConfigurationProperties(prefix = "ingest")
 class IngestProperties {
   @BeanProperty var storageBaseDir: String = _
+  @BooleanBeanProperty var autoLogin: Boolean = true
   @BeanProperty var accounts: java.util.List[AccountCredentials] = new java.util.ArrayList()
 }

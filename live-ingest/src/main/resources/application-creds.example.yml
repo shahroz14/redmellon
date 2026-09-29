@@ -1,6 +1,7 @@
 ingest:
   accounts:
-    - user-id: YOUR_ZERODHA_CLIENT_ID     # e.g. AB1234
+    - broker: ZERODHA
+      user-id: YOUR_ZERODHA_CLIENT_ID     # e.g. AB1234
       password: YOUR_ZERODHA_PASSWORD
       totp-secret: YOUR_TOTP_SECRET_KEY   # base32 seed from authenticator app setup
       apps:
