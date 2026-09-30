@@ -35,6 +35,9 @@ class ZerodhaSessionManager(sessionRegistry: SessionRegistry) extends SessionMan
     session
   }
 
+  def getApiConnect(userId: String, apiKey: String): Option[ApiConnect] =
+    Option(kiteConnectMap.get(sessionKey(userId, apiKey))).map(new KiteConnectAdapter(_))
+
   def invalidateSession(userId: String, apiKey: String): Unit =
     sessionRegistry.get(userId, apiKey) match {
       case Some(session) =>

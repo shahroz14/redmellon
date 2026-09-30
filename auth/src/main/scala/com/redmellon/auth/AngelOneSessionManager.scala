@@ -42,6 +42,9 @@ class AngelOneSessionManager(sessionRegistry: SessionRegistry) extends SessionMa
     session
   }
 
+  def getApiConnect(userId: String, apiKey: String): Option[ApiConnect] =
+    Option(smartConnectMap.get(sessionKey(userId, apiKey))).map(new SmartConnectAdapter(_))
+
   def invalidateSession(userId: String, apiKey: String): Unit =
     sessionRegistry.get(userId, apiKey) match {
       case Some(_) =>
