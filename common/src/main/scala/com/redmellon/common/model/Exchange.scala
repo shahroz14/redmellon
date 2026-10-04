@@ -7,7 +7,4 @@ object Exchange {
   case object BSE extends Exchange
   case object NFO extends Exchange
   case object BFO extends Exchange
-  case object CDS extends Exchange
-  case object MCX extends Exchange
-  case object BCD extends Exchange
 }

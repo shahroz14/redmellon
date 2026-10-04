@@ -4,5 +4,14 @@ plugins {
 
 dependencies {
     api project(':common')
+    api project(':auth')
     api "org.scala-lang:scala-library:${scalaFullVersion}"
+    api 'com.fasterxml.jackson.core:jackson-databind'
+    api "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation 'commons-codec:commons-codec:1.13'
+    implementation 'de.taimos:totp:1.0'
+    implementation 'org.mindrot:jbcrypt:0.4'
+    api 'com.zerodhatech.kiteconnect:kiteconnect:3.5.0'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 }

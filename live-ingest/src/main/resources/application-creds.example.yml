@@ -7,11 +7,14 @@ ingest:
       apps:
         - api-key: YOUR_KITE_API_KEY_1
           api-secret: YOUR_KITE_API_SECRET_1
+          appName: your_app_name_1
         - api-key: YOUR_KITE_API_KEY_2
           api-secret: YOUR_KITE_API_SECRET_2
+          appName: your_app_name_2
     - user-id: YOUR_ZERODHA_CLIENT_ID_2
       password: YOUR_ZERODHA_PASSWORD_2
       totp-secret: YOUR_TOTP_SECRET_KEY_2
       apps:
         - api-key: YOUR_KITE_API_KEY_1
           api-secret: YOUR_KITE_API_SECRET_1
+          appName: your_app_name_1

@@ -1,35 +1,31 @@
 package com.redmellon.ingest
 
-import com.redmellon.auth.{
+import com.redmellon.auth.AppNotLoggedInException
+import com.redmellon.broker.model.ApiSession
+import com.redmellon.broker.session.{
   AngelOneSessionManager,
   SessionManager,
   SessionManagerFactory,
-  SessionRegistry,
   ZerodhaSessionManager
 }
 import com.redmellon.common.BrokerName
-import com.redmellon.common.model.{CandleInterval, CandleRequest, Exchange}
+import com.redmellon.common.model.{Exchange, Instrument, SubscribeMode}
 import com.redmellon.common.util.Logging
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.core.annotation.Order
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDate, ZoneId}
 import scala.jdk.CollectionConverters._
 
 @Configuration
 class LiveIngestBeans extends Logging {
 
   @Bean
-  def sessionRegistry(): SessionRegistry = new SessionRegistry()
+  def zerodhaSessionManager(): ZerodhaSessionManager = new ZerodhaSessionManager()
 
   @Bean
-  def zerodhaSessionManager(sessionRegistry: SessionRegistry): ZerodhaSessionManager =
-    new ZerodhaSessionManager(sessionRegistry)
-
-  @Bean
-  def angelOneSessionManager(sessionRegistry: SessionRegistry): AngelOneSessionManager =
-    new AngelOneSessionManager(sessionRegistry)
+  def angelOneSessionManager(): AngelOneSessionManager = new AngelOneSessionManager()
 
   @Bean
   def sessionManagerFactory(managers: java.util.List[SessionManager]): SessionManagerFactory =
@@ -41,72 +37,73 @@ class LiveIngestBeans extends Logging {
     _ =>
       if (props.autoLogin) {
         props.accounts.asScala.foreach { account =>
-          val sessionManager = factory.forBroker(account.broker)
           account.apps.asScala.foreach { app =>
-            info(s"Logging in user ${account.userId} for app ${app.apiKey}")
-            sessionManager.login(account, app)
+            info(s"Logging in user ${account.userId} for app ${app.appName}")
+            factory.login(account, app)
           }
         }
       }
 
-  // TODO: temporary — remove after testing
   @Bean
-  @Order(2)
-  def nseInstrumentsRunner(
+  @Order(4)
+  def niftyTickerRunner(
     props: IngestProperties,
     factory: SessionManagerFactory
   ): ApplicationRunner =
     _ => {
-      val sessionOpt = for {
-        acc <- props.accounts.asScala.find(_.broker == BrokerName.Zerodha)
-        app <- acc.apps.asScala.headOption
-      } yield (acc.userId, app.apiKey)
+      if (!props.accounts.asScala.exists(_.broker == BrokerName.Zerodha)) {
+        logger.warn("No Zerodha account configured — skipping NIFTY ticker")
+      } else
+        try {
+          val session = factory.getSession("redmellon_premium")
 
-      sessionOpt match {
-        case None =>
-          logger.warn("No Zerodha session available — skipping NSE instruments fetch")
-        case Some((userId, apiKey)) =>
-          try {
-            val instruments = factory.getApiConnect(userId, apiKey).instruments(Exchange.NFO)
-            info(s"NSE instruments count: ${instruments.size}")
-            instruments.take(5).foreach(i => info(s"  ${i.tradingSymbol} (${i.instrumentToken})"))
-          } catch {
-            case e: Exception => logger.error("NSE instruments fetch failed", e)
+          val nseInstruments = session.appConnect.instruments(Exchange.NSE)
+          val instruments = session.appConnect.instruments(Exchange.NFO)
+
+          nseInstruments.find(i => i.tradingSymbol == "NIFTY 50") match {
+            case Some(nifty) =>
+              info(s"NIFTY instrument: $nifty")
+              session.appTicker.subscribe(
+                Seq(nifty.instrumentToken),
+                SubscribeMode.Full,
+                ticks => {
+                  ticks.foreach(t => info(s"NIFTY price: ${t.lastPrice}"))
+                  subscribeToNiftyFno(ticks.head.lastPrice, instruments, session)
+                }
+              )
+            case None =>
+              logger.warn("NIFTY instrument not found in NFO instruments")
           }
+
+        } catch {
+          case e: Exception => logger.error("NIFTY ticker setup failed", e)
+        }
+
+      def subscribeToNiftyFno(niftyPrice: Double, instruments: Seq[Instrument], session: ApiSession): Unit = {
+        val ist = ZoneId.of("Asia/Kolkata")
+        val lowerBound = niftyPrice - 1500
+        val upperBound = niftyPrice + 1500
+        val expiryUpperBound = LocalDate.now().plusDays(180)
+
+        val tokens = instruments
+          .filter { i =>
+            val strikeInRange = i.strike.toDoubleOption.exists(s => s >= lowerBound && s <= upperBound)
+            val expiryInRange =
+              i.expiry.exists(ms => Instant.ofEpochMilli(ms).atZone(ist).toLocalDate.isBefore(expiryUpperBound))
+            i.tradingSymbol.startsWith("NIFTY") && strikeInRange && expiryInRange
+          }
+          .map(e => (e.instrumentToken, (e.tradingSymbol, e.exchangeToken))).toMap
+
+        info(s"Subscribing to ${tokens.size} NIFTY NFO instruments")
+
+        session.appTicker
+          .subscribe(
+            tokens.keys.toSeq,
+            SubscribeMode.Full,
+            ticks =>
+              ticks.foreach(t => info(s"tick ${tokens(t.instrumentToken)}: $t"))
+          )
+
       }
     }
-
-  // TODO: temporary — remove after testing
-  @Bean
-  @Order(3)
-  def relianceCandleRunner(
-    props: IngestProperties,
-    factory: SessionManagerFactory
-  ): ApplicationRunner =
-    _ => {
-      val sessionOpt = for {
-        acc <- props.accounts.asScala.find(_.broker == BrokerName.AngelOne)
-        app <- acc.apps.asScala.headOption
-      } yield (acc.userId, app.apiKey)
-
-      sessionOpt match {
-        case None =>
-          logger.warn("No AngelOne session available — skipping Reliance candle fetch")
-        case Some((userId, apiKey)) =>
-          try {
-            val req = CandleRequest(
-              exchange = "NSE",
-              symbolToken = "2885",
-              interval = CandleInterval.OneDay,
-              from = LocalDateTime.of(2025, 1, 1, 9, 15),
-              to = LocalDateTime.of(2025, 1, 10, 15, 30)
-            )
-            val candles = factory.getApiConnect(userId, apiKey).candleData(req)
-            info(s"Reliance 1D candles: $candles")
-          } catch {
-            case e: Exception => logger.error("Reliance candle fetch failed", e)
-          }
-      }
-    }
-
 }

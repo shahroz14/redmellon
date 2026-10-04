@@ -1,5 +1,6 @@
-package com.redmellon.common.model
+package com.redmellon.broker.model
 
+import com.redmellon.broker.api.{AppConnect, AppTicker}
 import com.redmellon.common.BrokerName
 
 case class ApiSession(
@@ -10,5 +11,8 @@ case class ApiSession(
   publicToken: String,
   loginTime: String,
   brokerType: BrokerName,
-  apiKey: String
+  apiKey: String,
+  appName: String,
+  appConnect: AppConnect,
+  appTicker: AppTicker
 )
