@@ -4,6 +4,9 @@ spring:
   profiles:
     active: creds
 
+server:
+  port: 8081
+
 ingest:
   storage:
     base-dir: ~/redmellon

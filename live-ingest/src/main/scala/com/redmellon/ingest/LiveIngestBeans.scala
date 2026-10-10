@@ -9,7 +9,8 @@ import com.redmellon.broker.session.{
   ZerodhaSessionManager
 }
 import com.redmellon.common.BrokerName
-import com.redmellon.common.model.{Exchange, Instrument, SubscribeMode}
+import com.redmellon.common.BrokerName.Zerodha
+import com.redmellon.common.model.{Exchange, Instrument, OptionSymbol, SubscribeMode}
 import com.redmellon.common.util.Logging
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.{Bean, Configuration}
@@ -32,14 +33,19 @@ class LiveIngestBeans extends Logging {
     new SessionManagerFactory(managers.asScala.toList)
 
   @Bean
+  def tickLogger(): TickLogger = new TickLogger()
+
+  @Bean
   @Order(1)
   def autoLoginRunner(props: IngestProperties, factory: SessionManagerFactory): ApplicationRunner =
     _ =>
       if (props.autoLogin) {
         props.accounts.asScala.foreach { account =>
           account.apps.asScala.foreach { app =>
-            info(s"Logging in user ${account.userId} for app ${app.appName}")
-            factory.login(account, app)
+            if (account.broker == Zerodha) {
+              info(s"Logging in user ${account.userId} for app ${app.appName}")
+              factory.login(account, app)
+            }
           }
         }
       }
@@ -48,7 +54,8 @@ class LiveIngestBeans extends Logging {
   @Order(4)
   def niftyTickerRunner(
     props: IngestProperties,
-    factory: SessionManagerFactory
+    factory: SessionManagerFactory,
+    tickLogger: TickLogger
   ): ApplicationRunner =
     _ => {
       if (!props.accounts.asScala.exists(_.broker == BrokerName.Zerodha)) {
@@ -59,6 +66,7 @@ class LiveIngestBeans extends Logging {
 
           val nseInstruments = session.appConnect.instruments(Exchange.NSE)
           val instruments = session.appConnect.instruments(Exchange.NFO)
+          var subscribedFno = false
 
           nseInstruments.find(i => i.tradingSymbol == "NIFTY 50") match {
             case Some(nifty) =>
@@ -67,8 +75,13 @@ class LiveIngestBeans extends Logging {
                 Seq(nifty.instrumentToken),
                 SubscribeMode.Full,
                 ticks => {
-                  ticks.foreach(t => info(s"NIFTY price: ${t.lastPrice}"))
-                  subscribeToNiftyFno(ticks.head.lastPrice, instruments, session)
+                  ticks.foreach { t =>
+                    tickLogger.log(t.copy(symbol = "NIFTY", exchangeToken = nifty.exchangeToken))
+                  }
+                  if (!subscribedFno) {
+                    subscribeToNiftyFno(ticks.head.lastPrice, instruments, session)
+                    subscribedFno = true
+                  }
                 }
               )
             case None =>
@@ -92,7 +105,11 @@ class LiveIngestBeans extends Logging {
               i.expiry.exists(ms => Instant.ofEpochMilli(ms).atZone(ist).toLocalDate.isBefore(expiryUpperBound))
             i.tradingSymbol.startsWith("NIFTY") && strikeInRange && expiryInRange
           }
-          .map(e => (e.instrumentToken, (e.tradingSymbol, e.exchangeToken))).toMap
+          .map { e =>
+            val normalizedSymbol =
+              OptionSymbol.parse(e.tradingSymbol, e.expiry).map(_.toNormalizedName).getOrElse(e.tradingSymbol)
+            (e.instrumentToken, (normalizedSymbol, e.exchangeToken))
+          }.toMap
 
         info(s"Subscribing to ${tokens.size} NIFTY NFO instruments")
 
@@ -101,7 +118,10 @@ class LiveIngestBeans extends Logging {
             tokens.keys.toSeq,
             SubscribeMode.Full,
             ticks =>
-              ticks.foreach(t => info(s"tick ${tokens(t.instrumentToken)}: $t"))
+              ticks.foreach { t =>
+                val (sym, exToken) = tokens(t.instrumentToken)
+                tickLogger.log(t.copy(symbol = sym, exchangeToken = exToken))
+              }
           )
 
       }
