@@ -10,6 +10,7 @@ server:
 ingest:
   storage:
     base-dir: ~/redmellon
+  bypass-market-hours: false
 
 logging:
   level:
