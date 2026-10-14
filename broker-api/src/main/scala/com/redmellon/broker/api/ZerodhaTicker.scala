@@ -17,6 +17,12 @@ class ZerodhaTicker(ticker: KiteTicker) extends AppTicker {
   private var connected = false
   private var connectInitiated = false
 
+  override def disconnect(): Unit = {
+    ticker.setTryReconnection(false)
+    ticker.disconnect()
+    connected = false
+  }
+
   def subscribe(tokens: Seq[Long], mode: SubscribeMode, onTick: Seq[Tick] => Unit): Unit = {
     val kiteMode = mode match {
       case SubscribeMode.LTP   => KiteTicker.modeLTP
