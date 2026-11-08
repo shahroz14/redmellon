@@ -11,6 +11,9 @@ ingest:
   storage:
     base-dir: ~/redmellon
   bypass-market-hours: true
+  # Switch either ticker off independently (both default to true).
+  nifty-ticker-enabled: true
+  stock-option-ticker-enabled: true
 
 logging:
   level:

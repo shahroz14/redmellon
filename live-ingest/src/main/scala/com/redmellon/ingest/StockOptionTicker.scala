@@ -21,7 +21,9 @@ class StockOptionTicker(props: IngestProperties, factory: SessionManagerFactory,
     */
   def subscribe(): Unit = {
     val symbols = props.stockOptionSymbols.asScala.map(_.trim).filter(_.nonEmpty).distinct.toSeq
-    if (symbols.isEmpty) {
+    if (!props.stockOptionTickerEnabled) {
+      info("Stock option ticker is disabled (ingest.stock-option-ticker-enabled=false) — skipping")
+    } else if (symbols.isEmpty) {
       logger.warn("No stock option symbols configured — skipping stock option ticker")
     } else if (!props.accounts.asScala.exists(_.broker == BrokerName.Zerodha)) {
       logger.warn("No Zerodha account configured — skipping stock option ticker")

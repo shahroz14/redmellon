@@ -15,7 +15,9 @@ class NiftyTicker(props: IngestProperties, factory: SessionManagerFactory, tickL
 
   /** Subscribes NIFTY spot and, on its first tick, the surrounding NFO strikes on the current session. */
   def subscribe(): Unit =
-    if (!props.accounts.asScala.exists(_.broker == BrokerName.Zerodha)) {
+    if (!props.niftyTickerEnabled) {
+      info("NIFTY ticker is disabled (ingest.nifty-ticker-enabled=false) — skipping")
+    } else if (!props.accounts.asScala.exists(_.broker == BrokerName.Zerodha)) {
       logger.warn("No Zerodha account configured — skipping NIFTY ticker")
     } else
       try {

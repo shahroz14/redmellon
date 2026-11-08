@@ -15,6 +15,9 @@ class IngestProperties {
   @BeanProperty var loginMaxAttempts: Int = 5
   @BeanProperty var loginRetryDelaySeconds: Int = 30
   @BooleanBeanProperty var bypassMarketHours: Boolean = false
+  // Each ticker can be switched off on its own. Both are on by default.
+  @BooleanBeanProperty var niftyTickerEnabled: Boolean = true
+  @BooleanBeanProperty var stockOptionTickerEnabled: Boolean = true
   // Stocks whose options are ticked. Defaults to seven heavy NIFTY 50 weights plus M&M and IOC; override in yml to change the list.
   @BeanProperty var stockOptionSymbols: java.util.List[String] = new java.util.ArrayList(
     java.util.Arrays.asList(
