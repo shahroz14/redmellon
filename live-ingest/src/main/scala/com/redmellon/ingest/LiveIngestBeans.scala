@@ -73,4 +73,9 @@ class LiveIngestBeans extends Logging {
   @Order(4)
   def niftyTickerRunner(niftyTicker: NiftyTicker): ApplicationRunner =
     _ => niftyTicker.subscribe()
+
+  @Bean
+  @Order(5)
+  def stockOptionTickerRunner(stockOptionTicker: StockOptionTicker): ApplicationRunner =
+    _ => stockOptionTicker.subscribe()
 }

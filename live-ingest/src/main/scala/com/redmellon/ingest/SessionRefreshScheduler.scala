@@ -7,8 +7,12 @@ import org.springframework.stereotype.Component
 
 @Component
 @EnableScheduling
-class SessionRefreshScheduler(props: IngestProperties, factory: SessionManagerFactory, niftyTicker: NiftyTicker)
-    extends Logging {
+class SessionRefreshScheduler(
+  props: IngestProperties,
+  factory: SessionManagerFactory,
+  niftyTicker: NiftyTicker,
+  stockOptionTicker: StockOptionTicker
+) extends Logging {
 
   // Kite tokens expire daily, so log every app in again before market open and re-attach the ticker.
   @Scheduled(cron = "0 0 9 * * MON-FRI", zone = "Asia/Kolkata")
@@ -20,5 +24,6 @@ class SessionRefreshScheduler(props: IngestProperties, factory: SessionManagerFa
         if (session.isEmpty) logger.error(s"Session refresh failed for app $appName")
       }
       if (results.get("redmellon_premium").exists(_.isDefined)) niftyTicker.subscribe()
+      if (results.get(props.stockOptionAppName).exists(_.isDefined)) stockOptionTicker.subscribe()
     }
 }
